@@ -6,9 +6,6 @@
 #include <string.h>
 #include "cJSON.h"
 
-static int running = 0;
-void sigint_handler(int signalId) { running = 0; }
-
 //-----------------------------------------------------
 // Server Start Controller
 //-----------------------------------------------------
@@ -85,49 +82,47 @@ static cJSON* iec61850_server_read_items(cJSON* args, char **error) {
 }
 
 //-----------------------------------------------------
-// Main Test Harness
+//  eport_c request routing
+//-----------------------------------------------------
+static cJSON* on_request( char *method, cJSON *args, char **error ){
+    
+    cJSON *response = NULL;
+    // Handle the request
+    // LOGTRACE("handle the request %s", method);
+
+    if (strcmp(method, "server_start") == 0) {
+        response = iec61850_server_start( args, error );
+    } else if (strcmp(method, "write_items") == 0) {
+        response = iec61850_server_write_items( args, error );
+    } else if (strcmp(method, "read_items") == 0) {
+        response = iec61850_server_read_items( args, error );
+    } else {
+        *error = "invalid method";
+    }
+
+    return response;
+}
+
+//-----------------------------------------------------
+// Catch signals
+//-----------------------------------------------------
+static void stopHandler(int sig) {
+    // LOGINFO("received ctrl-c");
+    stop();
+}
+
+//-----------------------------------------------------
+// The Entry Point
 //-----------------------------------------------------
 int main(int argc, char** argv) {
-    running = 1;
-    signal(SIGINT, sigint_handler);
 
-    printf("Starting IEC 61850 Server...\n");
+    signal(SIGINT, stopHandler);
+    signal(SIGTERM, stopHandler);
 
-    char *err = NULL;
-    cJSON *response = NULL;
-
-    // Start
-    cJSON *startArgs = cJSON_Parse("{\"port\": 8102}");
-    response = iec61850_server_start(startArgs, &err);
-    if (err) { printf("Start Error: %s\n", err); return 1; }
-    printf("Server started on port 8102.\n");
-    cJSON_Delete(startArgs); cJSON_Delete(response);
-
-    const char* test_path = "SampleIEDDevice1/MMXU1.Mod.ctlModel";
-
-    // WRITE: Notice the type is "Float", matching json2mms in utils.c!
-    char writeJson[256];
-    snprintf(writeJson, sizeof(writeJson), "{\"%s\": {\"type\": \"Int\", \"value\": 1}}", test_path);
-    cJSON *writeArgs = cJSON_Parse(writeJson);
-    response = iec61850_server_write_items(writeArgs, &err);
-    printf("Write Result: %s\n", response ? cJSON_PrintUnformatted(response) : err);
-    cJSON_Delete(writeArgs); cJSON_Delete(response);
-
-    Thread_sleep(1000);
-
-    // READ
-    char readJson[256];
-    snprintf(readJson, sizeof(readJson), "[\"%s\"]", test_path);
-    cJSON *readArgs = cJSON_Parse(readJson);
-    err = NULL;
-    response = iec61850_server_read_items(readArgs, &err);
-    printf("Read Result: %s\n", response ? cJSON_PrintUnformatted(response) : err);
-    cJSON_Delete(readArgs); cJSON_Delete(response);
-
-    printf("\nServer running. Press Ctrl+C to stop.\n");
-    while (running) { Thread_sleep(100); }
-
-    printf("\nStopping Server...\n");
+    // LOGINFO("enter eport_loop");
+    // eport_loop( &on_request );
+    
     stop();
-    return 0;
+
+    return EXIT_SUCCESS;
 }
