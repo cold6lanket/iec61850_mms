@@ -26,14 +26,23 @@ start_link(Name) ->
     start_link(Name, #{response_timeout => ?RESPONSE_TIMEOUT}).
 
 start_link(Name, Options) ->
-    % Executable is expected in application priv dir
     Dir = code:priv_dir(iec61850_mms),
     Source =
         case os:type() of
-            {unix, linux} -> atom_to_list(?MODULE);
+            {unix, _}     -> atom_to_list(?MODULE);
             {win32, _}    -> atom_to_list(?MODULE) ++ ".exe"
         end,
-    SourcePath = unicode:characters_to_binary(Dir ++ "/" ++ Source),
+    LocalSourcePath = filename:absname(Source),
+    PrivSourcePath = Dir ++ "/" ++ Source,
+    SourcePath =
+        case filelib:is_file(LocalSourcePath) of
+            true -> unicode:characters_to_binary(LocalSourcePath);
+            false ->
+                case filelib:is_file(PrivSourcePath) of
+                    true -> unicode:characters_to_binary(PrivSourcePath);
+                    false -> unicode:characters_to_binary(LocalSourcePath)
+                end
+        end,
     eport_c:start_link(SourcePath, Name, Options).
 
 stop(Pid) ->
@@ -72,4 +81,3 @@ write_items(Pid, Items) ->
     write_items(Pid, Items, undefined).
 write_items(Pid, Items, Timeout) ->
     eport_c:request(Pid, <<"write_items">>, Items, Timeout).
-

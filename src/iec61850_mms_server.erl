@@ -5,14 +5,12 @@
 %%----------------------------------------------------------------
 -module(iec61850_mms_server).
 
-%% Control API
 -export([
     start_link/1, start_link/2,
     set_log_level/2,
     stop/1
 ]).
 
-%% Protocol API
 -export([
     server_start/2,
     write_items/2, write_items/3,
@@ -31,10 +29,20 @@ start_link(Name, Options) ->
     Dir = code:priv_dir(iec61850_mms),
     Source =
         case os:type() of
-            {unix, linux} -> atom_to_list(?MODULE);
-            {win32, _}    -> atom_to_list(?MODULE) ++ ".exe"
+            {unix, _} -> atom_to_list(?MODULE);
+            {win32, _} -> atom_to_list(?MODULE) ++ ".exe"
         end,
-    SourcePath = unicode:characters_to_binary(Dir ++ "/" ++ Source),
+    LocalSourcePath = filename:absname(Source),
+    PrivSourcePath = Dir ++ "/" ++ Source,
+    SourcePath =
+        case filelib:is_file(LocalSourcePath) of
+            true -> unicode:characters_to_binary(LocalSourcePath);
+            false ->
+                case filelib:is_file(PrivSourcePath) of
+                    true -> unicode:characters_to_binary(PrivSourcePath);
+                    false -> unicode:characters_to_binary(LocalSourcePath)
+                end
+        end,
     eport_c:start_link(SourcePath, Name, Options).
 
 stop(Pid) ->
@@ -65,4 +73,3 @@ read_items(Pid, Items) ->
     read_items(Pid, Items, undefined).
 read_items(Pid, Items, Timeout) ->
     eport_c:request(Pid, <<"read_items">>, Items, Timeout).
-

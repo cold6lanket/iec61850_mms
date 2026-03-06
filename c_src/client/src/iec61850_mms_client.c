@@ -12,16 +12,12 @@
 // libiec61850 includes
 #include "iec61850_client.h"
 #include "hal_thread.h"
-
 // JSON parser
 #include "cJSON.h"
+#include "eport_c.h"
 
 #include "iec61850_mms_client_loop.h"
 #include "utils.h"
-
-// Placeholder for your eport/communication library
-// In a real scenario, include your "eport_c.h" here.
-// For this example, we mock the logic flow.
 
 //-----------------------------------------------------
 // API Implementation
@@ -279,10 +275,8 @@ static cJSON* on_request(char *method, cJSON *args, char **error) {
 // Main Entry
 //-----------------------------------------------------
 int main(int argc, char *argv[]) {
-    printf("Starting IEC 61850 Client...\n");
-    
-    // LOGINFO("enter eport_loop");
-    // eport_loop( &on_request );
+    LOGINFO("enter eport_loop");
+    eport_loop( &on_request );
     return EXIT_SUCCESS;
 }
 

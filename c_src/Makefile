@@ -6,11 +6,13 @@ CURDIR := $(shell pwd)
 # 2. Paths
 LIBIEC_HOME = ./lib/libiec61850
 cJSON_HOME  = ./lib/cJSON
+EPORT_C_HOME = ./lib/eport_c
 
 # Adjust these based on where you place the server files and static_model.h
 CLIENT_INCLUDE_DIR ?= -I $(CURDIR)/c_src/client/include
 SERVER_INCLUDE_DIR ?= -I $(CURDIR)/c_src/server/include
 UTILS_DIR ?= -I $(CURDIR)/c_src/utils/include
+EPORT_C_INCLUDE_DIR ?= -I $(CURDIR)/lib/eport_c/c_src/eport_c/include
 
 # 3. Default Rule (Builds both client and server)
 all: libiec $(CLIENT_TARGET) $(SERVER_TARGET)
@@ -39,6 +41,7 @@ LIBS += -lpthread
 # 7. Source Files (Segregated for Client and Server)
 CLIENT_SRCS = c_src/client/src/iec61850_mms_client.c \
               c_src/client/src/iec61850_mms_client_loop.c \
+              $(EPORT_C_HOME)/c_src/eport_c/src/eport_c.c \
               c_src/utils/src/utils.c \
               $(cJSON_HOME)/cJSON.c
 
@@ -58,7 +61,7 @@ libiec:
 # Compile the Client
 $(CLIENT_TARGET): $(CLIENT_SRCS)
 	@echo "--- Compiling $(CLIENT_TARGET) ---"
-	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) -o $(CLIENT_TARGET) $(CLIENT_SRCS) $(LIBS)
+	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TARGET) $(CLIENT_SRCS) $(LIBS)
 
 # Compile the Server
 $(SERVER_TARGET): $(SERVER_SRCS)
