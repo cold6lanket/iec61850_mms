@@ -276,58 +276,8 @@ static cJSON* on_request(char *method, cJSON *args, char **error) {
 //-----------------------------------------------------
 int main(int argc, char *argv[]) {
     LOGINFO("enter eport_loop");
+
     eport_loop( &on_request );
+
     return EXIT_SUCCESS;
 }
-
-
- 
-    // // Example test call:
-    // char *err = NULL;
-
-    // cJSON *response = NULL;
-
-    // cJSON *connectArgs = cJSON_Parse("{\"host\":\"127.0.0.1\", \"port\":102}");
-    // on_request("connect", connectArgs, &err);
-    
-    // if (err) printf("Error: %s\n", err);
-    // else printf("Connected!\n");
-
-    // // 2. BROWSE (Discover the Logical Devices)
-    // printf("\n[2] Browsing Server...\n");
-    // // Passing NULL or empty object because browse() doesn't need args yet
-    // response = on_request("browse", connectArgs, &err);
-
-    // if (response) {
-    //     char *jsonStr = cJSON_Print(response);
-    //     printf("Server Structure:\n%s\n", jsonStr);
-    //     free(jsonStr);
-    //     cJSON_Delete(response);
-    // } else {
-    //     printf("Browse Error: %s\n", err);
-    // }
-
-    // printf("\n[3] Reading Analog Input 1...\n");
-    // cJSON *readArgs = cJSON_Parse("{\"SampleIEDDevice1/MMXU1.Mod.ctlModel\": { \"fcType\": \"MX\" } }");
-
-    // // cJSON *writeArgs = cJSON_Parse("[ { \"fcType\": \"MX\", \"type\": \"Int\", \"value\": 1, \"path\": \"SampleIEDDevice1/MMXU1.Mod.ctlModel\" } ]");
-
-    // // printf("writeArgs:\n%s\n", cJSON_Print(writeArgs));
-
-    // // response = on_request("write_items", writeArgs, &err);
-    
-    // response = on_request("read_items", readArgs, &err);
-    
-
-    // if (response) {
-    //     char *jsonStr = cJSON_Print(response);
-    //     printf("Read Result:\n%s\n", jsonStr);
-    //     free(jsonStr);
-    //     cJSON_Delete(response);
-    // } else {
-    //     printf("Read Error: %s\n", err ? err : "Unknown");
-    // }
-
-    // // Cleanup
-    // cJSON_Delete(connectArgs);
-    // cJSON_Delete(readArgs);

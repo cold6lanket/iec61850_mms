@@ -1,6 +1,11 @@
 # 1. Project Names
 CLIENT_TARGET = iec61850_mms_client
 SERVER_TARGET = iec61850_mms_server
+CLIENT_TEST_INFO_TARGET = iec61850_mms_client_test_info
+CLIENT_TEST_CONNECT_TARGET = iec61850_mms_client_test_connect
+CLIENT_TEST_BROWSE_TARGET = iec61850_mms_client_test_browse
+CLIENT_TEST_READ_TARGET = iec61850_mms_client_test_read
+CLIENT_TEST_WRITE_TARGET = iec61850_mms_client_test_write
 CURDIR := $(shell pwd)
 
 # 2. Paths
@@ -52,6 +57,21 @@ SERVER_SRCS = c_src/server/src/iec61850_mms_server.c \
               c_src/utils/src/utils.c \
               $(cJSON_HOME)/cJSON.c
 
+CLIENT_TEST_COMMON_SRCS = c_src/tests/mms_client_test_common.c \
+                        c_src/utils/src/utils.c \
+                        $(cJSON_HOME)/cJSON.c
+
+CLIENT_TEST_INFO_SRCS = c_src/tests/iec61850_mms_client_info_test.c \
+                        $(CLIENT_TEST_COMMON_SRCS)
+CLIENT_TEST_CONNECT_SRCS = c_src/tests/iec61850_mms_client_connect_test.c \
+                           $(CLIENT_TEST_COMMON_SRCS)
+CLIENT_TEST_BROWSE_SRCS = c_src/tests/iec61850_mms_client_browse_test.c \
+                          $(CLIENT_TEST_COMMON_SRCS)
+CLIENT_TEST_READ_SRCS = c_src/tests/iec61850_mms_client_read_test.c \
+                        $(CLIENT_TEST_COMMON_SRCS)
+CLIENT_TEST_WRITE_SRCS = c_src/tests/iec61850_mms_client_write_test.c \
+                         $(CLIENT_TEST_COMMON_SRCS)
+
 # 8. Build Rules
 
 # Ensure the core libiec61850 library is built first
@@ -68,6 +88,44 @@ $(SERVER_TARGET): $(SERVER_SRCS)
 	@echo "--- Compiling $(SERVER_TARGET) ---"
 	$(CC) $(CFLAGS) $(SERVER_INCLUDE_DIR) $(UTILS_DIR) -o $(SERVER_TARGET) $(SERVER_SRCS) $(LIBS)
 
+# Compile Client tests
+$(CLIENT_TEST_INFO_TARGET): $(CLIENT_TEST_INFO_SRCS)
+	@echo "--- Compiling $(CLIENT_TEST_INFO_TARGET) ---"
+	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TEST_INFO_TARGET) $(CLIENT_TEST_INFO_SRCS) $(LIBS)
+
+$(CLIENT_TEST_CONNECT_TARGET): $(CLIENT_TEST_CONNECT_SRCS)
+	@echo "--- Compiling $(CLIENT_TEST_CONNECT_TARGET) ---"
+	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TEST_CONNECT_TARGET) $(CLIENT_TEST_CONNECT_SRCS) $(LIBS)
+
+$(CLIENT_TEST_BROWSE_TARGET): $(CLIENT_TEST_BROWSE_SRCS)
+	@echo "--- Compiling $(CLIENT_TEST_BROWSE_TARGET) ---"
+	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TEST_BROWSE_TARGET) $(CLIENT_TEST_BROWSE_SRCS) $(LIBS)
+
+$(CLIENT_TEST_READ_TARGET): $(CLIENT_TEST_READ_SRCS)
+	@echo "--- Compiling $(CLIENT_TEST_READ_TARGET) ---"
+	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TEST_READ_TARGET) $(CLIENT_TEST_READ_SRCS) $(LIBS)
+
+$(CLIENT_TEST_WRITE_TARGET): $(CLIENT_TEST_WRITE_SRCS)
+	@echo "--- Compiling $(CLIENT_TEST_WRITE_TARGET) ---"
+	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TEST_WRITE_TARGET) $(CLIENT_TEST_WRITE_SRCS) $(LIBS)
+
+test-client-info: $(CLIENT_TEST_INFO_TARGET)
+	./$(CLIENT_TEST_INFO_TARGET)
+
+test-client-connect: $(CLIENT_TEST_CONNECT_TARGET)
+	./$(CLIENT_TEST_CONNECT_TARGET)
+
+test-client-browse: $(CLIENT_TEST_BROWSE_TARGET)
+	./$(CLIENT_TEST_BROWSE_TARGET)
+
+test-client-read: $(CLIENT_TEST_READ_TARGET)
+	./$(CLIENT_TEST_READ_TARGET)
+
+test-client-write: $(CLIENT_TEST_WRITE_TARGET)
+	./$(CLIENT_TEST_WRITE_TARGET)
+
+load-test-client: test-client-info test-client-connect test-client-browse test-client-read test-client-write
+
 # Optional tool to regenerate static_model.c from the .cid file if you change it later
 model:
 	@echo "--- Generating static_model.c from CID file ---"
@@ -76,7 +134,10 @@ model:
 	mv static_model.h c_src/server/include/
 
 clean:
-	rm -f $(CLIENT_TARGET) $(SERVER_TARGET)
+	rm -f $(CLIENT_TARGET) $(SERVER_TARGET) \
+	$(CLIENT_TEST_INFO_TARGET) $(CLIENT_TEST_CONNECT_TARGET) \
+	$(CLIENT_TEST_BROWSE_TARGET) $(CLIENT_TEST_READ_TARGET) \
+	$(CLIENT_TEST_WRITE_TARGET)
 	cd $(LIBIEC_HOME) && make clean
 
 
