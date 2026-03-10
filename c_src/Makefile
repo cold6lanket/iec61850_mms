@@ -9,15 +9,48 @@ CLIENT_TEST_WRITE_TARGET = iec61850_mms_client_test_write
 CURDIR := $(shell pwd)
 
 # 2. Paths
-LIBIEC_HOME = ./lib/libiec61850
-cJSON_HOME  = ./lib/cJSON
-EPORT_C_HOME = ./lib/eport_c
+ifeq ($(notdir $(CURDIR)),c_src)
+	PROJECT_ROOT := $(abspath $(CURDIR)/..)
+	C_SRC_DIR := $(abspath $(CURDIR))
+else
+	PROJECT_ROOT := $(abspath $(CURDIR))
+	C_SRC_DIR := $(PROJECT_ROOT)/c_src
+endif
+
+BUILD ?= $(PROJECT_ROOT)/_build
+ifeq "$(wildcard $(BUILD) )" ""
+	BUILD := $(abspath $(PROJECT_ROOT)/../../..)
+endif
+
+EPORT_C_HOME = $(PROJECT_ROOT)/lib/eport_c
+cJSON_HOME  = $(PROJECT_ROOT)/lib/cJSON
+
+LIBIEC_HOME = $(PROJECT_ROOT)/lib/libiec61850
+ifeq "$(wildcard $(LIBIEC_HOME))" ""
+	LIBIEC_HOME := $(C_SRC_DIR)/libiec61850
+endif
 
 # Adjust these based on where you place the server files and static_model.h
-CLIENT_INCLUDE_DIR ?= -I $(CURDIR)/c_src/client/include
-SERVER_INCLUDE_DIR ?= -I $(CURDIR)/c_src/server/include
-UTILS_DIR ?= -I $(CURDIR)/c_src/utils/include
-EPORT_C_INCLUDE_DIR ?= -I $(CURDIR)/lib/eport_c/c_src/eport_c/include
+CLIENT_INCLUDE_DIR ?= -I $(C_SRC_DIR)/client/include
+SERVER_INCLUDE_DIR ?= -I $(C_SRC_DIR)/server/include
+UTILS_DIR ?= -I $(C_SRC_DIR)/utils/include
+
+EPORT_C_INCLUDE_DIR ?= -I $(BUILD)/default/lib/eport_c/priv/include
+EPORT_C_LIB_DIR ?= $(BUILD)/default/lib/eport_c/priv
+CJSON_INCLUDE_DIR ?= $(BUILD)/default/lib/eport_c/priv/cjson
+
+EPORT_C_LIB = $(EPORT_C_LIB_DIR)/libeport_c.a
+ifeq "$(wildcard $(EPORT_C_LIB))" ""
+	EPORT_C_INCLUDE_DIR := -I $(EPORT_C_HOME)/c_src/eport_c/include
+	EPORT_C_LINK =
+	EPORT_C_SRC = $(EPORT_C_HOME)/c_src/eport_c/src/eport_c.c
+	CJSON_INCLUDE_DIR := -I $(cJSON_HOME)
+	CJSON_SRC = $(cJSON_HOME)/cJSON.c
+else
+	EPORT_C_LINK = -L $(EPORT_C_LIB_DIR) -leport_c -lcjson -lcjson_utils
+	EPORT_C_SRC =
+	CJSON_SRC =
+endif
 
 # 3. Default Rule (Builds both client and server)
 all: libiec $(CLIENT_TARGET) $(SERVER_TARGET)
@@ -37,39 +70,39 @@ CFLAGS += -I$(LIBIEC_HOME)/src/mms/inc
 CFLAGS += -I$(LIBIEC_HOME)/src/common/inc
 CFLAGS += -I$(LIBIEC_HOME)/hal/inc
 CFLAGS += -I$(LIBIEC_HOME)/src/logging
-CFLAGS += -I$(cJSON_HOME)
+CFLAGS += $(CJSON_INCLUDE_DIR)
 
 # 6. Libraries to Link
 LIBS = $(LIBIEC_HOME)/build/libiec61850.a
-LIBS += -lpthread
+LIBS += -lpthread $(EPORT_C_LINK)
 
 # 7. Source Files (Segregated for Client and Server)
-CLIENT_SRCS = c_src/client/src/iec61850_mms_client.c \
-              c_src/client/src/iec61850_mms_client_loop.c \
-              $(EPORT_C_HOME)/c_src/eport_c/src/eport_c.c \
-              c_src/utils/src/utils.c \
-              $(cJSON_HOME)/cJSON.c
+CLIENT_SRCS = $(C_SRC_DIR)/client/src/iec61850_mms_client.c \
+              $(C_SRC_DIR)/client/src/iec61850_mms_client_loop.c \
+              $(EPORT_C_SRC) \
+              $(C_SRC_DIR)/utils/src/utils.c \
+              $(CJSON_SRC)
 
 # Notice we added static_model.c to the server sources
-SERVER_SRCS = c_src/server/src/iec61850_mms_server.c \
-              c_src/server/src/iec61850_mms_server_loop.c \
-              c_src/server/src/static_model.c \
-              c_src/utils/src/utils.c \
-              $(cJSON_HOME)/cJSON.c
+SERVER_SRCS = $(C_SRC_DIR)/server/src/iec61850_mms_server.c \
+              $(C_SRC_DIR)/server/src/iec61850_mms_server_loop.c \
+              $(C_SRC_DIR)/server/src/static_model.c \
+              $(C_SRC_DIR)/utils/src/utils.c \
+              $(CJSON_SRC)
 
-CLIENT_TEST_COMMON_SRCS = c_src/tests/mms_client_test_common.c \
-                        c_src/utils/src/utils.c \
-                        $(cJSON_HOME)/cJSON.c
+CLIENT_TEST_COMMON_SRCS = $(C_SRC_DIR)/tests/mms_client_test_common.c \
+                        $(C_SRC_DIR)/utils/src/utils.c \
+                        $(CJSON_SRC)
 
-CLIENT_TEST_INFO_SRCS = c_src/tests/iec61850_mms_client_info_test.c \
+CLIENT_TEST_INFO_SRCS = $(C_SRC_DIR)/tests/iec61850_mms_client_info_test.c \
                         $(CLIENT_TEST_COMMON_SRCS)
-CLIENT_TEST_CONNECT_SRCS = c_src/tests/iec61850_mms_client_connect_test.c \
+CLIENT_TEST_CONNECT_SRCS = $(C_SRC_DIR)/tests/iec61850_mms_client_connect_test.c \
                            $(CLIENT_TEST_COMMON_SRCS)
-CLIENT_TEST_BROWSE_SRCS = c_src/tests/iec61850_mms_client_browse_test.c \
+CLIENT_TEST_BROWSE_SRCS = $(C_SRC_DIR)/tests/iec61850_mms_client_browse_test.c \
                           $(CLIENT_TEST_COMMON_SRCS)
-CLIENT_TEST_READ_SRCS = c_src/tests/iec61850_mms_client_read_test.c \
+CLIENT_TEST_READ_SRCS = $(C_SRC_DIR)/tests/iec61850_mms_client_read_test.c \
                         $(CLIENT_TEST_COMMON_SRCS)
-CLIENT_TEST_WRITE_SRCS = c_src/tests/iec61850_mms_client_write_test.c \
+CLIENT_TEST_WRITE_SRCS = $(C_SRC_DIR)/tests/iec61850_mms_client_write_test.c \
                          $(CLIENT_TEST_COMMON_SRCS)
 
 # 8. Build Rules
@@ -129,9 +162,9 @@ load-test-client: test-client-info test-client-connect test-client-browse test-c
 # Optional tool to regenerate static_model.c from the .cid file if you change it later
 model:
 	@echo "--- Generating static_model.c from CID file ---"
-	java -jar $(LIBIEC_HOME)/tools/model_generator/genmodel.jar c_src/server/src/simpleIO_direct_control.cid
-	mv static_model.c c_src/server/src/
-	mv static_model.h c_src/server/include/
+	java -jar $(LIBIEC_HOME)/tools/model_generator/genmodel.jar $(C_SRC_DIR)/server/src/simpleIO_direct_control.cid
+	mv static_model.c $(C_SRC_DIR)/server/src/
+	mv static_model.h $(C_SRC_DIR)/server/include/
 
 clean:
 	rm -f $(CLIENT_TARGET) $(SERVER_TARGET) \
