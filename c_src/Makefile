@@ -1,231 +1,112 @@
-# 1. Project Names
-CLIENT_TARGET = iec61850_mms_client
-SERVER_TARGET = iec61850_mms_server
-CLIENT_TEST_INFO_TARGET = iec61850_mms_client_test_info
-CLIENT_TEST_CONNECT_TARGET = iec61850_mms_client_test_connect
-CLIENT_TEST_BROWSE_TARGET = iec61850_mms_client_test_browse
-CLIENT_TEST_READ_TARGET = iec61850_mms_client_test_read
-CLIENT_TEST_WRITE_TARGET = iec61850_mms_client_test_write
+# Based on c_src.mk from erlang.mk by Loic Hoguin <essen@ninenines.eu>
+
 CURDIR := $(shell pwd)
+BASEDIR := $(abspath $(CURDIR)/..)
 
-# 2. Paths
-ifeq ($(notdir $(CURDIR)),c_src)
-	PROJECT_ROOT := $(abspath $(CURDIR)/..)
-	C_SRC_DIR := $(abspath $(CURDIR))
-else
-	PROJECT_ROOT := $(abspath $(CURDIR))
-	C_SRC_DIR := $(PROJECT_ROOT)/c_src
-endif
+PROJECT ?= $(notdir $(BASEDIR))
+PROJECT := $(strip $(PROJECT))
 
-BUILD ?= $(PROJECT_ROOT)/_build
+BUILD ?= $(BASEDIR)/_build
 ifeq "$(wildcard $(BUILD) )" ""
-	BUILD := $(abspath $(PROJECT_ROOT)/../../..)
+	BUILD := $(abspath $(BASEDIR)/../../..)
 endif
 
-EPORT_C_HOME = $(PROJECT_ROOT)/lib/eport_c
-cJSON_HOME  = $(PROJECT_ROOT)/lib/cJSON
-
-LIBIEC_HOME = $(PROJECT_ROOT)/lib/libiec61850
-ifeq "$(wildcard $(LIBIEC_HOME))" ""
-	LIBIEC_HOME := $(C_SRC_DIR)/libiec61850
-endif
-
-# Adjust these based on where you place the server files and static_model.h
-CLIENT_INCLUDE_DIR ?= -I $(C_SRC_DIR)/client/include
-SERVER_INCLUDE_DIR ?= -I $(C_SRC_DIR)/server/include
-UTILS_DIR ?= -I $(C_SRC_DIR)/utils/include
-
-EPORT_C_INCLUDE_DIR ?= -I $(BUILD)/default/lib/eport_c/priv/include
+# eport_c and cJSON libraries
+EPORT_C_INCLUDE_DIR ?= $(BUILD)/default/lib/eport_c/priv/include
 EPORT_C_LIB_DIR ?= $(BUILD)/default/lib/eport_c/priv
 CJSON_INCLUDE_DIR ?= $(BUILD)/default/lib/eport_c/priv/cjson
 
-EPORT_C_LIB = $(EPORT_C_LIB_DIR)/libeport_c.a
-ifeq "$(wildcard $(EPORT_C_LIB))" ""
-	EPORT_C_INCLUDE_DIR := -I $(EPORT_C_HOME)/c_src/eport_c/include
-	EPORT_C_LINK =
-	EPORT_C_SRC = $(EPORT_C_HOME)/c_src/eport_c/src/eport_c.c
-	CJSON_INCLUDE_DIR := -I $(cJSON_HOME)
-	CJSON_SRC = $(cJSON_HOME)/cJSON.c
-else
-	EPORT_C_LINK = -L $(EPORT_C_LIB_DIR) -leport_c -lcjson -lcjson_utils
-	EPORT_C_SRC =
-	CJSON_SRC =
+# libiec61850 paths (compiled via build_deps.sh)
+LIBIEC61850_INCLUDE_DIR ?= $(CURDIR)/libiec61850/build/_install/include
+LIBIEC61850_LIB64_DIR ?= $(CURDIR)/libiec61850/build/_install/lib64
+LIBIEC61850_LIB_DIR ?= $(CURDIR)/libiec61850/build/_install/lib
+
+UTILITIES_INCLUDE_DIR ?= $(CURDIR)/utils/include
+CLIENT_INCLUDE_DIR ?= $(CURDIR)/client/include
+SERVER_INCLUDE_DIR ?= $(CURDIR)/server/include
+
+# Add standard include dir and the nested libiec61850 dir to catch all headers
+INCLUDE_DIR = -I $(EPORT_C_INCLUDE_DIR) -I $(CJSON_INCLUDE_DIR) \
+              -I $(UTILITIES_INCLUDE_DIR) -I $(LIBIEC61850_INCLUDE_DIR) \
+              -I $(LIBIEC61850_INCLUDE_DIR)/libiec61850
+
+C_SRC_DIR = $(CURDIR)
+C_SRC_OUTPUT_CLIENT ?= $(BASEDIR)/priv/$(PROJECT)_client
+C_SRC_OUTPUT_SERVER ?= $(BASEDIR)/priv/$(PROJECT)_server
+
+# System type and C compiler/flags.
+UNAME_SYS := $(shell uname -s)
+ifeq ($(UNAME_SYS), Darwin)
+	CC ?= cc
+	CFLAGS ?= -O3 -arch x86_64 -finline-functions -Wall -Wmissing-prototypes
+	CXXFLAGS ?= -O3 -arch x86_64 -finline-functions -Wall
+	LDFLAGS ?= -arch x86_64 -flat_namespace -undefined suppress
+else ifeq ($(UNAME_SYS), FreeBSD)
+	CC ?= cc
+	CFLAGS ?= -O3 -finline-functions -Wall -Wmissing-prototypes
+	CXXFLAGS ?= -O3 -finline-functions -Wall
+else ifeq ($(UNAME_SYS), Linux)
+	CC ?= gcc
+	CFLAGS ?= -O3 -finline-functions -Wall -Wmissing-prototypes
+	CXXFLAGS ?= -O3 -finline-functions -Wall
 endif
 
-# 3. Default Rule (Builds both client and server)
-all: libiec $(CLIENT_TARGET) $(SERVER_TARGET)
+CFLAGS += -fPIC $(INCLUDE_DIR)
+CXXFLAGS += -fPIC $(INCLUDE_DIR)
 
-# 4. Compiler & Flags
-CC = gcc
-CFLAGS = -g -Wall -Wno-unused-function
+CLIENT_CFLAGS = $(CFLAGS) $(CLIENT_INCLUDE_DIR)
+CLIENT_CXXFLAGS += $(CXXFLAGS) $(CLIENT_INCLUDE_DIR)
 
-# 5. Includes
-include $(LIBIEC_HOME)/make/target_system.mk
-include $(LIBIEC_HOME)/make/stack_includes.mk
-include $(LIBIEC_HOME)/make/common_targets.mk
+SERVER_CFLAGS = $(CFLAGS) $(SERVER_INCLUDE_DIR)
+SERVER_CXXFLAGS += $(CXXFLAGS) $(SERVER_INCLUDE_DIR)
 
-CFLAGS += -I$(LIBIEC_HOME)/src/include
-CFLAGS += -I$(LIBIEC_HOME)/src/iec61850/inc
-CFLAGS += -I$(LIBIEC_HOME)/src/mms/inc
-CFLAGS += -I$(LIBIEC_HOME)/src/common/inc
-CFLAGS += -I$(LIBIEC_HOME)/hal/inc
-CFLAGS += -I$(LIBIEC_HOME)/src/logging
-CFLAGS += $(CJSON_INCLUDE_DIR)
+LDLIBS += -lpthread -L $(EPORT_C_LIB_DIR) -leport_c -lcjson -lcjson_utils \
+          -L $(LIBIEC61850_LIB_DIR) -L $(LIBIEC61850_LIB64_DIR) -liec61850
 
-# 6. Libraries to Link
-LIBS = $(LIBIEC_HOME)/build/libiec61850.a
-LIBS += -lpthread $(EPORT_C_LINK)
+# Verbosity.
+c_verbose_0 = @echo " C     " $(?F);
+c_verbose = $(c_verbose_$(V))
 
-# 7. Source Files (Segregated for Client and Server)
-CLIENT_SRCS = $(C_SRC_DIR)/client/src/iec61850_mms_client.c \
-              $(C_SRC_DIR)/client/src/iec61850_mms_client_loop.c \
-              $(EPORT_C_SRC) \
-              $(C_SRC_DIR)/utils/src/utils.c \
-              $(CJSON_SRC)
+cpp_verbose_0 = @echo " CPP   " $(?F);
+cpp_verbose = $(cpp_verbose_$(V))
 
-# Notice we added static_model.c to the server sources
-SERVER_SRCS = $(C_SRC_DIR)/server/src/iec61850_mms_server.c \
-              $(C_SRC_DIR)/server/src/iec61850_mms_server_loop.c \
-              $(C_SRC_DIR)/server/src/static_model.c \
-              $(C_SRC_DIR)/utils/src/utils.c \
-              $(CJSON_SRC)
+link_verbose_0 = @echo " LD    " $(@F);
+link_verbose = $(link_verbose_$(V))
 
-CLIENT_TEST_COMMON_SRCS = $(C_SRC_DIR)/tests/mms_client_test_common.c \
-                        $(C_SRC_DIR)/utils/src/utils.c \
-                        $(CJSON_SRC)
+# Automatically find sources, ignoring the library, tests, and the opposite target's folder
+CLIENT_SOURCES := $(shell find $(C_SRC_DIR) -type d \( -name "libiec61850" -o -name "server" -o -name "tests" \) -prune -false -o -type f \( -name "*.c" -o -name "*.C" -o -name "*.cc" -o -name "*.cpp" \))
+CLIENT_OBJECTS = $(addsuffix .o, $(basename $(CLIENT_SOURCES)))
 
-CLIENT_TEST_INFO_SRCS = $(C_SRC_DIR)/tests/iec61850_mms_client_info_test.c \
-                        $(CLIENT_TEST_COMMON_SRCS)
-CLIENT_TEST_CONNECT_SRCS = $(C_SRC_DIR)/tests/iec61850_mms_client_connect_test.c \
-                           $(CLIENT_TEST_COMMON_SRCS)
-CLIENT_TEST_BROWSE_SRCS = $(C_SRC_DIR)/tests/iec61850_mms_client_browse_test.c \
-                          $(CLIENT_TEST_COMMON_SRCS)
-CLIENT_TEST_READ_SRCS = $(C_SRC_DIR)/tests/iec61850_mms_client_read_test.c \
-                        $(CLIENT_TEST_COMMON_SRCS)
-CLIENT_TEST_WRITE_SRCS = $(C_SRC_DIR)/tests/iec61850_mms_client_write_test.c \
-                         $(CLIENT_TEST_COMMON_SRCS)
+SERVER_SOURCES := $(shell find $(C_SRC_DIR) -type d \( -name "libiec61850" -o -name "client" -o -name "tests" \) -prune -false -o -type f \( -name "*.c" -o -name "*.C" -o -name "*.cc" -o -name "*.cpp" \))
+SERVER_OBJECTS = $(addsuffix .o, $(basename $(SERVER_SOURCES)))
 
-# 8. Build Rules
+$(C_SRC_OUTPUT_CLIENT) : COMPILE_C = $(c_verbose) $(CC) $(CLIENT_CFLAGS) $(CPPFLAGS) -c
+$(C_SRC_OUTPUT_CLIENT) : COMPILE_CPP = $(cpp_verbose) $(CXX) $(CLIENT_CXXFLAGS) $(CPPFLAGS) -c
 
-# Ensure the core libiec61850 library is built first
-libiec:
-	cd $(LIBIEC_HOME) && make
+$(C_SRC_OUTPUT_SERVER) : COMPILE_C = $(c_verbose) $(CC) $(SERVER_CFLAGS) $(CPPFLAGS) -c
+$(C_SRC_OUTPUT_SERVER) : COMPILE_CPP = $(cpp_verbose) $(CXX) $(SERVER_CXXFLAGS) $(CPPFLAGS) -c
 
-# Compile the Client
-$(CLIENT_TARGET): $(CLIENT_SRCS)
-	@echo "--- Compiling $(CLIENT_TARGET) ---"
-	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TARGET) $(CLIENT_SRCS) $(LIBS)
+all: $(C_SRC_OUTPUT_CLIENT) $(C_SRC_OUTPUT_SERVER)
 
-# Compile the Server
-$(SERVER_TARGET): $(SERVER_SRCS)
-	@echo "--- Compiling $(SERVER_TARGET) ---"
-	$(CC) $(CFLAGS) $(SERVER_INCLUDE_DIR) $(UTILS_DIR) -o $(SERVER_TARGET) $(SERVER_SRCS) $(LIBS)
+$(C_SRC_OUTPUT_CLIENT): $(CLIENT_OBJECTS)
+	@mkdir -p $(BASEDIR)/priv/
+	$(link_verbose) $(CC) $(CLIENT_OBJECTS) $(LDFLAGS) $(LDLIBS) -o $(C_SRC_OUTPUT_CLIENT)
 
-# Compile Client tests
-$(CLIENT_TEST_INFO_TARGET): $(CLIENT_TEST_INFO_SRCS)
-	@echo "--- Compiling $(CLIENT_TEST_INFO_TARGET) ---"
-	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TEST_INFO_TARGET) $(CLIENT_TEST_INFO_SRCS) $(LIBS)
+$(C_SRC_OUTPUT_SERVER): $(SERVER_OBJECTS)
+	@mkdir -p $(BASEDIR)/priv/
+	$(link_verbose) $(CC) $(SERVER_OBJECTS) $(LDFLAGS) $(LDLIBS) -o $(C_SRC_OUTPUT_SERVER)
 
-$(CLIENT_TEST_CONNECT_TARGET): $(CLIENT_TEST_CONNECT_SRCS)
-	@echo "--- Compiling $(CLIENT_TEST_CONNECT_TARGET) ---"
-	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TEST_CONNECT_TARGET) $(CLIENT_TEST_CONNECT_SRCS) $(LIBS)
+%.o: %.c
+	$(COMPILE_C) $(OUTPUT_OPTION) $<
 
-$(CLIENT_TEST_BROWSE_TARGET): $(CLIENT_TEST_BROWSE_SRCS)
-	@echo "--- Compiling $(CLIENT_TEST_BROWSE_TARGET) ---"
-	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TEST_BROWSE_TARGET) $(CLIENT_TEST_BROWSE_SRCS) $(LIBS)
+%.o: %.cc
+	$(COMPILE_CPP) $(OUTPUT_OPTION) $<
 
-$(CLIENT_TEST_READ_TARGET): $(CLIENT_TEST_READ_SRCS)
-	@echo "--- Compiling $(CLIENT_TEST_READ_TARGET) ---"
-	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TEST_READ_TARGET) $(CLIENT_TEST_READ_SRCS) $(LIBS)
+%.o: %.C
+	$(COMPILE_CPP) $(OUTPUT_OPTION) $<
 
-$(CLIENT_TEST_WRITE_TARGET): $(CLIENT_TEST_WRITE_SRCS)
-	@echo "--- Compiling $(CLIENT_TEST_WRITE_TARGET) ---"
-	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) $(EPORT_C_INCLUDE_DIR) -o $(CLIENT_TEST_WRITE_TARGET) $(CLIENT_TEST_WRITE_SRCS) $(LIBS)
-
-test-client-info: $(CLIENT_TEST_INFO_TARGET)
-	./$(CLIENT_TEST_INFO_TARGET)
-
-test-client-connect: $(CLIENT_TEST_CONNECT_TARGET)
-	./$(CLIENT_TEST_CONNECT_TARGET)
-
-test-client-browse: $(CLIENT_TEST_BROWSE_TARGET)
-	./$(CLIENT_TEST_BROWSE_TARGET)
-
-test-client-read: $(CLIENT_TEST_READ_TARGET)
-	./$(CLIENT_TEST_READ_TARGET)
-
-test-client-write: $(CLIENT_TEST_WRITE_TARGET)
-	./$(CLIENT_TEST_WRITE_TARGET)
-
-load-test-client: test-client-info test-client-connect test-client-browse test-client-read test-client-write
-
-# Optional tool to regenerate static_model.c from the .cid file if you change it later
-model:
-	@echo "--- Generating static_model.c from CID file ---"
-	java -jar $(LIBIEC_HOME)/tools/model_generator/genmodel.jar $(C_SRC_DIR)/server/src/simpleIO_direct_control.cid
-	mv static_model.c $(C_SRC_DIR)/server/src/
-	mv static_model.h $(C_SRC_DIR)/server/include/
+%.o: %.cpp
+	$(COMPILE_CPP) $(OUTPUT_OPTION) $<
 
 clean:
-	rm -f $(CLIENT_TARGET) $(SERVER_TARGET) \
-	$(CLIENT_TEST_INFO_TARGET) $(CLIENT_TEST_CONNECT_TARGET) \
-	$(CLIENT_TEST_BROWSE_TARGET) $(CLIENT_TEST_READ_TARGET) \
-	$(CLIENT_TEST_WRITE_TARGET)
-	cd $(LIBIEC_HOME) && make clean
-
-
-# 1. Project Name
-# TARGET = iec61850_mms_client
-# CURDIR := $(shell pwd)
-
-# # 2. Paths
-# LIBIEC_HOME = ./lib/libiec61850
-# cJSON_HOME  = ./lib/cJSON
-
-# CLIENT_INCLUDE_DIR ?= -I $(CURDIR)/c_src/client/include
-# UTILS_DIR ?= -I $(CURDIR)/c_src/utils/include
-
-# # 3. Default Rule (MUST BE FIRST)
-# # This tells make: "When I type 'make', do this first."
-# all: libiec $(TARGET)
-
-# # 4. Compiler & Flags
-# CC = gcc
-# CFLAGS = -g -Wall -Wno-unused-function
-
-# # # Add these specific paths for internal library dependencies
-
-# # 5. Includes (Now safe to include after 'all')
-# include $(LIBIEC_HOME)/make/target_system.mk
-# include $(LIBIEC_HOME)/make/stack_includes.mk
-# include $(LIBIEC_HOME)/make/common_targets.mk
-
-# CFLAGS += -I$(LIBIEC_HOME)/src/include
-# CFLAGS += -I$(LIBIEC_HOME)/src/iec61850/inc
-# CFLAGS += -I$(LIBIEC_HOME)/src/mms/inc
-# CFLAGS += -I$(LIBIEC_HOME)/src/common/inc
-# CFLAGS += -I$(LIBIEC_HOME)/hal/inc
-# CFLAGS += -I$(LIBIEC_HOME)/src/logging
-# CFLAGS += -I$(cJSON_HOME)
-
-# # 6. Libraries to Link
-# LIBS = $(LIBIEC_HOME)/build/libiec61850.a
-# LIBS += -lpthread
-
-# # 7. Source Files
-# SRCS = c_src/client/src/iec61850_mms_client.c c_src/client/src/iec61850_mms_client_loop.c c_src/utils/src/utils.c $(cJSON_HOME)/cJSON.c
-
-# # 8. Build Rules
-
-# # Ensure the library is built first
-# libiec:
-# 	cd $(LIBIEC_HOME) && make
-
-# # Compile the wrapper
-# $(TARGET): $(SRCS)
-# 	@echo "--- Compiling $(TARGET) ---"
-# 	$(CC) $(CFLAGS) $(CLIENT_INCLUDE_DIR) $(UTILS_DIR) -o $(TARGET) $(SRCS) $(LIBS)
-
-# clean:
-# 	rm -f $(TARGET)
-# 	cd $(LIBIEC_HOME) && make clean
+	@rm -f $(C_SRC_OUTPUT_CLIENT) $(C_SRC_OUTPUT_SERVER) $(CLIENT_OBJECTS) $(SERVER_OBJECTS)
