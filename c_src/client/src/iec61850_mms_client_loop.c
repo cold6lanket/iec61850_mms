@@ -13,11 +13,26 @@ struct MMS_CLIENT {
   char* hostname_cache;
 } mms_client;
 
-char *start(char *host, int port)
+char *start(char *host, int port, const char *password)
 {
     IedClientError error;
 
     mms_client.connection = IedConnection_create();
+
+    AcseAuthenticationParameter auth = NULL;
+
+    if (password != NULL && strlen(password) > 0) {
+        MmsConnection mmsConnection = IedConnection_getMmsConnection(mms_client.connection);
+        IsoConnectionParameters parameters = MmsConnection_getIsoConnectionParameters(mmsConnection);
+
+        auth = AcseAuthenticationParameter_create();
+        AcseAuthenticationParameter_setAuthMechanism(auth, ACSE_AUTH_PASSWORD);
+        AcseAuthenticationParameter_setPassword(auth, password);
+
+        IsoConnectionParameters_setAcseAuthenticationParameter(parameters, auth);
+
+        IedConnection_setConnectTimeout(mms_client.connection, 10000);
+    }
 
     IedConnection_connect(mms_client.connection, &error, host, port);
 
@@ -26,16 +41,26 @@ char *start(char *host, int port)
     }
 
     mms_client.is_connected = true;
+    
+    if (mms_client.hostname_cache) {
+        free(mms_client.hostname_cache);
+    }
     mms_client.hostname_cache = strdup(host);
     mms_client.port_cache = port;
 
     return NULL;
 
 on_error:
-    IedConnection_destroy(mms_client.connection);
-    mms_client.connection = NULL;
+    // IedConnection_destroy handles the cleanup of the attached 'auth' parameter,
+    // so we ONLY destroy 'auth' manually if we created it but never attached it 
+    // to the connection (which shouldn't happen here, but good practice).
+    if (mms_client.connection != NULL) {
+        IedConnection_destroy(mms_client.connection);
+        mms_client.connection = NULL;
+    }
+    
     mms_client.is_connected = false;
-    return "Failed to connect (error code):";
+    return "Failed to connect (error code)";
 }
 
 bool is_connected()

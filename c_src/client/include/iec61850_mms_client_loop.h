@@ -24,7 +24,7 @@ typedef struct {
     BrowseLN **logical_nodes; // NULL-terminated array of structs
 } BrowseLD;
 
-char *start(char *host, int port);
+char *start(char *host, int port, const char *password);
 bool is_connected(void);
 MmsValue* read_value(const char *path, const char *fcType);
 IedClientError write_value(const char *path, const char *fcType, MmsValue* value);
