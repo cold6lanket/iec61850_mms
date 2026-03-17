@@ -17,9 +17,10 @@ EPORT_C_LIB_DIR ?= $(BUILD)/default/lib/eport_c/priv
 CJSON_INCLUDE_DIR ?= $(BUILD)/default/lib/eport_c/priv/cjson
 
 # libiec61850 paths (compiled via build_deps.sh)
-LIBIEC61850_INCLUDE_DIR ?= $(CURDIR)/libiec61850/build/_install/include
-LIBIEC61850_LIB64_DIR ?= $(CURDIR)/libiec61850/build/_install/lib64
-LIBIEC61850_LIB_DIR ?= $(CURDIR)/libiec61850/build/_install/lib
+LIBIEC_HOME ?= $(CURDIR)/libiec61850
+LIBIEC61850_INCLUDE_DIR ?= $(LIBIEC_HOME)/build/_install/include
+LIBIEC61850_LIB64_DIR ?= $(LIBIEC_HOME)/build/_install/lib64
+LIBIEC61850_LIB_DIR ?= $(LIBIEC_HOME)/build/_install/lib
 
 UTILITIES_INCLUDE_DIR ?= $(CURDIR)/c_src/utils/include
 CLIENT_INCLUDE_DIR ?= $(CURDIR)/c_src/client/include
