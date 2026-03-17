@@ -21,9 +21,9 @@ LIBIEC61850_INCLUDE_DIR ?= $(CURDIR)/libiec61850/build/_install/include
 LIBIEC61850_LIB64_DIR ?= $(CURDIR)/libiec61850/build/_install/lib64
 LIBIEC61850_LIB_DIR ?= $(CURDIR)/libiec61850/build/_install/lib
 
-UTILITIES_INCLUDE_DIR ?= $(CURDIR)/utils/include
-CLIENT_INCLUDE_DIR ?= $(CURDIR)/client/include
-SERVER_INCLUDE_DIR ?= $(CURDIR)/server/include
+UTILITIES_INCLUDE_DIR ?= $(CURDIR)/c_src/utils/include
+CLIENT_INCLUDE_DIR ?= $(CURDIR)/c_src/client/include
+SERVER_INCLUDE_DIR ?= $(CURDIR)/c_src/server/include
 
 # Add standard include dir and the nested libiec61850 dir to catch all headers
 INCLUDE_DIR = -I $(EPORT_C_INCLUDE_DIR) -I $(CJSON_INCLUDE_DIR) \
