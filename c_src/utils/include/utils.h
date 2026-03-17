@@ -1,7 +1,8 @@
-#include "cJSON.h"
 #include "mms_value.h"
 #include "iec61850_common.h"
 #include "iec61850_client.h"
+
+#include <cjson/cJSON.h>
 
 #ifndef mms_utilities__h
 #define mms_utilities__h
