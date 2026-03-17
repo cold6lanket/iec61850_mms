@@ -34,9 +34,9 @@ C_SRC_DIR = $(CURDIR)
 C_SRC_OUTPUT_CLIENT ?= $(BASEDIR)/priv/$(PROJECT)_client
 C_SRC_OUTPUT_SERVER ?= $(BASEDIR)/priv/$(PROJECT)_server
 
-include $(CURDIR)/libiec61850/make/target_system.mk
-include $(CURDIR)/libiec61850/make/stack_includes.mk
-include $(CURDIR)/libiec61850/make/common_targets.mk
+include $(CURDIR)/c_src/libiec61850/make/target_system.mk
+include $(CURDIR)/c_src/libiec61850/make/stack_includes.mk
+include $(CURDIR)/c_src/libiec61850/make/common_targets.mk
 
 # System type and C compiler/flags.
 UNAME_SYS := $(shell uname -s)
