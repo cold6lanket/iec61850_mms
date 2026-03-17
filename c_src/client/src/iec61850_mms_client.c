@@ -8,13 +8,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <eport_c.h>
 
 // libiec61850 includes
 #include "iec61850_client.h"
 #include "hal_thread.h"
-// JSON parser
-#include "cJSON.h"
-#include "eport_c.h"
 
 #include "iec61850_mms_client_loop.h"
 #include "utils.h"

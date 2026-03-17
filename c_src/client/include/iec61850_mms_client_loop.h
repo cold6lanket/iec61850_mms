@@ -1,8 +1,7 @@
 #ifndef mms_client_loop__h
 #define mms_client_loop__h
 
-
-// #include <eport_c.h>
+#include <eport_c.h>
 
 // --- Data Structures ---
 typedef struct {
