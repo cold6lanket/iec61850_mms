@@ -9,6 +9,13 @@ ifeq "$(wildcard $(BUILD) )" ""
 	BUILD := $(abspath $(BASEDIR)/../../..)
 endif
 
+# --- DEBUG "CONSOLE LOGS" ---
+$(info DEBUG: CURDIR is $(CURDIR))
+$(info DEBUG: BASEDIR is $(BASEDIR))
+$(info DEBUG: PROJECT is $(PROJECT))
+$(info DEBUG: BUILD is $(BUILD))
+# ----------------------------
+
 C_SRC_OUTPUT_CLIENT ?= $(BASEDIR)/priv/iec61850_mms_client
 C_SRC_OUTPUT_SERVER ?= $(BASEDIR)/priv/iec61850_mms_server
 
