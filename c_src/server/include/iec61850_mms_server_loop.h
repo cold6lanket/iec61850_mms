@@ -1,7 +1,7 @@
 #ifndef IEC61850_MMS_SERVER_LOOP_H
 #define IEC61850_MMS_SERVER_LOOP_H
 
-#include "cJSON.h"
+#include <eport_c.h>
 
 // Core Functions
 char* start(int tcpPort);
