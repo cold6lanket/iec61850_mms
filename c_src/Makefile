@@ -1,30 +1,32 @@
-# Based on c_src.mk from erlang.mk by Loic Hoguin <essen@ninenines.eu>
-
 CURDIR := $(shell pwd)
+BASEDIR := $(abspath $(CURDIR)/..)
 
-# 1. strictly define PRIV_DIR exactly one level up from c_src
-PRIV_DIR := $(abspath $(CURDIR)/../priv)
+PROJECT ?= $(notdir $(BASEDIR))
+PROJECT := $(strip $(PROJECT))
 
-# 2. Hardcode the exact executable names requested
-C_SRC_OUTPUT_CLIENT := $(PRIV_DIR)/iec61850_mms_client
-C_SRC_OUTPUT_SERVER := $(PRIV_DIR)/iec61850_mms_server
+BUILD ?= $(BASEDIR)/_build
+ifeq "$(wildcard $(BUILD) )" ""
+	BUILD := $(abspath $(BASEDIR)/../../..)
+endif
 
-# 3. Rebar3 puts all deps in the same parent folder (_build/default/lib).
-# Therefore, eport_c is guaranteed to be at ../../eport_c
-DEPS_DIR := $(abspath $(CURDIR)/../..)
-EPORT_C_INCLUDE_DIR := $(DEPS_DIR)/eport_c/priv/include
-EPORT_C_LIB_DIR := $(DEPS_DIR)/eport_c/priv
-CJSON_INCLUDE_DIR := $(DEPS_DIR)/eport_c/priv/cjson
+C_SRC_OUTPUT_CLIENT ?= $(BASEDIR)/priv/iec61850_mms_client
+C_SRC_OUTPUT_SERVER ?= $(BASEDIR)/priv/iec61850_mms_server
+
+# eport_c and cJSON libraries
+EPORT_C_INCLUDE_DIR ?= $(BUILD)/default/lib/eport_c/priv/include
+EPORT_C_LIB_DIR ?= $(BUILD)/default/lib/eport_c/priv
+
+CJSON_INCLUDE_DIR ?= $(BUILD)/default/lib/eport_c/priv/cjson
 
 # libiec61850 paths
-LIBIEC_HOME := $(CURDIR)/libiec61850
+LIBIEC_HOME ?= $(CURDIR)/libiec61850
 LIBIEC61850_INCLUDE_DIR := $(LIBIEC_HOME)/build/_install/include
 LIBIEC61850_LIB64_DIR := $(LIBIEC_HOME)/build/_install/lib64
 LIBIEC61850_LIB_DIR := $(LIBIEC_HOME)/build/_install/lib
 
-UTILITIES_INCLUDE_DIR := $(CURDIR)/utils/include
-CLIENT_INCLUDE_DIR := $(CURDIR)/client/include
-SERVER_INCLUDE_DIR := $(CURDIR)/server/include
+UTILITIES_INCLUDE_DIR ?= $(CURDIR)/utils/include
+CLIENT_INCLUDE_DIR ?= $(CURDIR)/client/include
+SERVER_INCLUDE_DIR ?= $(CURDIR)/server/include
 
 INCLUDE_DIR := -I $(EPORT_C_INCLUDE_DIR) -I $(CJSON_INCLUDE_DIR) \
                -I $(UTILITIES_INCLUDE_DIR) -I $(LIBIEC61850_INCLUDE_DIR) \
@@ -88,11 +90,11 @@ $(C_SRC_OUTPUT_SERVER) : COMPILE_CPP = $(cpp_verbose) $(CXX) $(SERVER_CXXFLAGS) 
 all: $(C_SRC_OUTPUT_CLIENT) $(C_SRC_OUTPUT_SERVER)
 
 $(C_SRC_OUTPUT_CLIENT): $(CLIENT_OBJECTS)
-	@mkdir -p $(PRIV_DIR)
+	@mkdir -p $(BASEDIR)/priv/
 	$(link_verbose) $(CC) $(CLIENT_OBJECTS) $(LDFLAGS) $(LDLIBS) -o $(C_SRC_OUTPUT_CLIENT)
 
 $(C_SRC_OUTPUT_SERVER): $(SERVER_OBJECTS)
-	@mkdir -p $(PRIV_DIR)
+	@mkdir -p $(BASEDIR)/priv/
 	$(link_verbose) $(CC) $(SERVER_OBJECTS) $(LDFLAGS) $(LDLIBS) -o $(C_SRC_OUTPUT_SERVER)
 
 %.o: %.c
