@@ -17,14 +17,14 @@ EPORT_C_LIB_DIR ?= $(BUILD)/default/lib/eport_c/priv
 CJSON_INCLUDE_DIR ?= $(BUILD)/default/lib/eport_c/priv/cjson
 
 # libiec61850 paths (compiled via build_deps.sh)
-LIBIEC_HOME ?= $(CURDIR)/c_src/libiec61850
+LIBIEC_HOME ?= $(CURDIR)/libiec61850
 LIBIEC61850_INCLUDE_DIR ?= $(LIBIEC_HOME)/build/_install/include
 LIBIEC61850_LIB64_DIR ?= $(LIBIEC_HOME)/build/_install/lib64
 LIBIEC61850_LIB_DIR ?= $(LIBIEC_HOME)/build/_install/lib
 
-UTILITIES_INCLUDE_DIR ?= $(CURDIR)/c_src/utils/include
-CLIENT_INCLUDE_DIR ?= $(CURDIR)/c_src/client/include
-SERVER_INCLUDE_DIR ?= $(CURDIR)/c_src/server/include
+UTILITIES_INCLUDE_DIR ?= $(CURDIR)/utils/include
+CLIENT_INCLUDE_DIR ?= $(CURDIR)/client/include
+SERVER_INCLUDE_DIR ?= $(CURDIR)/server/include
 
 # Add standard include dir and the nested libiec61850 dir to catch all headers
 INCLUDE_DIR = -I $(EPORT_C_INCLUDE_DIR) -I $(CJSON_INCLUDE_DIR) \
@@ -35,9 +35,9 @@ C_SRC_DIR = $(CURDIR)
 C_SRC_OUTPUT_CLIENT ?= $(BASEDIR)/priv/$(PROJECT)_client
 C_SRC_OUTPUT_SERVER ?= $(BASEDIR)/priv/$(PROJECT)_server
 
-include $(CURDIR)/c_src/libiec61850/make/target_system.mk
-include $(CURDIR)/c_src/libiec61850/make/stack_includes.mk
-include $(CURDIR)/c_src/libiec61850/make/common_targets.mk
+include $(CURDIR)/libiec61850/make/target_system.mk
+include $(CURDIR)/libiec61850/make/stack_includes.mk
+include $(CURDIR)/libiec61850/make/common_targets.mk
 
 # System type and C compiler/flags.
 UNAME_SYS := $(shell uname -s)
