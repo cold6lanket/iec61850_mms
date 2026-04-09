@@ -9,13 +9,6 @@ ifeq "$(wildcard $(BUILD) )" ""
 	BUILD := $(abspath $(BASEDIR)/../../..)
 endif
 
-# --- DEBUG "CONSOLE LOGS" ---
-$(info DEBUG: CURDIR is $(CURDIR))
-$(info DEBUG: BASEDIR is $(BASEDIR))
-$(info DEBUG: PROJECT is $(PROJECT))
-$(info DEBUG: BUILD is $(BUILD))
-# ----------------------------
-
 C_SRC_OUTPUT_CLIENT ?= $(BASEDIR)/priv/iec61850_mms_client
 C_SRC_OUTPUT_SERVER ?= $(BASEDIR)/priv/iec61850_mms_server
 
@@ -28,7 +21,7 @@ CJSON_INCLUDE_DIR ?= $(BUILD)/default/lib/eport_c/priv/cjson
 # libiec61850 paths
 LIBIEC_HOME ?= $(CURDIR)/libiec61850
 LIBIEC61850_INCLUDE_DIR := $(LIBIEC_HOME)/build/_install/include
-LIBIEC61850_LIB64_DIR := $(LIBIEC_HOME)/build/_install/lib64
+# LIBIEC61850_LIB64_DIR := $(LIBIEC_HOME)/build/_install/lib64
 LIBIEC61850_LIB_DIR := $(LIBIEC_HOME)/build/_install/lib
 
 UTILITIES_INCLUDE_DIR ?= $(CURDIR)/utils/include
@@ -41,7 +34,6 @@ INCLUDE_DIR := -I $(EPORT_C_INCLUDE_DIR) -I $(CJSON_INCLUDE_DIR) \
 
 C_SRC_DIR := $(CURDIR)
 
-include $(CURDIR)/libiec61850/make/target_system.mk
 include $(CURDIR)/libiec61850/make/stack_includes.mk
 include $(CURDIR)/libiec61850/make/common_targets.mk
 
@@ -71,7 +63,9 @@ SERVER_CFLAGS := $(CFLAGS) -I $(SERVER_INCLUDE_DIR)
 SERVER_CXXFLAGS := $(CXXFLAGS) -I $(SERVER_INCLUDE_DIR)
 
 LDLIBS += -lpthread -L $(EPORT_C_LIB_DIR) -leport_c -lcjson -lcjson_utils \
-          -L $(LIBIEC61850_LIB_DIR) -L $(LIBIEC61850_LIB64_DIR) -liec61850
+          -L $(LIBIEC61850_LIB_DIR) -liec61850
+
+include $(CURDIR)/libiec61850/make/target_system.mk
 
 c_verbose_0 = @echo " C     " $(?F);
 c_verbose = $(c_verbose_$(V))
