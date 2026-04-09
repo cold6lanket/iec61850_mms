@@ -34,6 +34,7 @@ INCLUDE_DIR := -I $(EPORT_C_INCLUDE_DIR) -I $(CJSON_INCLUDE_DIR) \
 
 C_SRC_DIR := $(CURDIR)
 
+include $(CURDIR)/libiec61850/make/target_system.mk
 include $(CURDIR)/libiec61850/make/stack_includes.mk
 include $(CURDIR)/libiec61850/make/common_targets.mk
 
@@ -51,6 +52,7 @@ else ifeq ($(UNAME_SYS), Linux)
 	CC ?= gcc
 	CFLAGS ?= -O3 -finline-functions -Wall -Wmissing-prototypes
 	CXXFLAGS ?= -O3 -finline-functions -Wall
+	LDFLAGS += -Wl,-rpath,$(LIBIEC61850_LIB_DIR):$(LIBIEC61850_LIB64_DIR)
 endif
 
 CFLAGS += -fPIC $(INCLUDE_DIR)
@@ -64,8 +66,6 @@ SERVER_CXXFLAGS := $(CXXFLAGS) -I $(SERVER_INCLUDE_DIR)
 
 LDLIBS += -lpthread -L $(EPORT_C_LIB_DIR) -leport_c -lcjson -lcjson_utils \
           -L $(LIBIEC61850_LIB_DIR) -liec61850
-
-include $(CURDIR)/libiec61850/make/target_system.mk
 
 c_verbose_0 = @echo " C     " $(?F);
 c_verbose = $(c_verbose_$(V))
