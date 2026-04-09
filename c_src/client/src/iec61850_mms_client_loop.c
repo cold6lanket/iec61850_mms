@@ -60,7 +60,12 @@ on_error:
     }
     
     mms_client.is_connected = false;
-    return "Failed to connect (error code)";
+
+    static char error_message[128]; 
+    
+    snprintf(error_message, sizeof(error_message), "Failed to connect (error code): %d", (int)error);
+
+    return error_message;
 }
 
 bool is_connected()
