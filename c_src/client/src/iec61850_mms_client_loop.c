@@ -19,20 +19,20 @@ char *start(char *host, int port, const char *password)
 
     mms_client.connection = IedConnection_create();
 
-    AcseAuthenticationParameter auth = NULL;
+    // AcseAuthenticationParameter auth = NULL;
 
-    if (password != NULL && strlen(password) > 0) {
-        MmsConnection mmsConnection = IedConnection_getMmsConnection(mms_client.connection);
-        IsoConnectionParameters parameters = MmsConnection_getIsoConnectionParameters(mmsConnection);
+    // if (password != NULL && strlen(password) > 0) {
+    //     MmsConnection mmsConnection = IedConnection_getMmsConnection(mms_client.connection);
+    //     IsoConnectionParameters parameters = MmsConnection_getIsoConnectionParameters(mmsConnection);
 
-        auth = AcseAuthenticationParameter_create();
-        AcseAuthenticationParameter_setAuthMechanism(auth, ACSE_AUTH_PASSWORD);
-        AcseAuthenticationParameter_setPassword(auth, password);
+    //     auth = AcseAuthenticationParameter_create();
+    //     AcseAuthenticationParameter_setAuthMechanism(auth, ACSE_AUTH_PASSWORD);
+    //     AcseAuthenticationParameter_setPassword(auth, password);
 
-        IsoConnectionParameters_setAcseAuthenticationParameter(parameters, auth);
+    //     IsoConnectionParameters_setAcseAuthenticationParameter(parameters, auth);
 
-        IedConnection_setConnectTimeout(mms_client.connection, 10000);
-    }
+    //     IedConnection_setConnectTimeout(mms_client.connection, 10000);
+    // }
 
     fprintf(stdout, "INFO: Connecting to host: %s, port: %d\r\n", host, port);
 
