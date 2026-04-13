@@ -34,8 +34,8 @@ char *start(char *host, int port, const char *password)
         IedConnection_setConnectTimeout(mms_client.connection, 10000);
     }
 
-    LOGINFO("host", host);
-    LOGINFO("port", port);
+    LOGINFO("host %s", host);
+    LOGINFO("port %s", port);
 
     IedConnection_connect(mms_client.connection, &error, host, port);
 
