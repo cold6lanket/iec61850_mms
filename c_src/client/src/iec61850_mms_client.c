@@ -60,6 +60,8 @@ static cJSON* iec61850_client_connect(cJSON* args, char **error)
         portNum = port->valueint;
     }
 
+    LOGINFO("portNum", portNum);
+
     char *_password = NULL;
  
     cJSON *password = cJSON_GetObjectItemCaseSensitive(args, "password");
@@ -67,6 +69,8 @@ static cJSON* iec61850_client_connect(cJSON* args, char **error)
     if (cJSON_IsString(password) && (password->valuestring != NULL)){
         _password = password->valuestring;
     }
+
+    LOGINFO("_password", _password);
 
     *error = start(
         host->valuestring,
