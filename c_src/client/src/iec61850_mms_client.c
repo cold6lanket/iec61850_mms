@@ -60,7 +60,7 @@ static cJSON* iec61850_client_connect(cJSON* args, char **error)
         portNum = port->valueint;
     }
 
-    LOGINFO("portNum %s", portNum);
+    LOGDEBUG("portNum %s", portNum);
 
     char *_password = NULL;
  
@@ -70,7 +70,7 @@ static cJSON* iec61850_client_connect(cJSON* args, char **error)
         _password = password->valuestring;
     }
 
-    LOGINFO("_password %s", _password);
+    LOGDEBUG("_password %s", _password);
 
     *error = start(
         host->valuestring,
