@@ -34,8 +34,7 @@ char *start(char *host, int port, const char *password)
         IedConnection_setConnectTimeout(mms_client.connection, 10000);
     }
 
-    LOGDEBUG("host %s", host);
-    LOGDEBUG("port %s", port);
+    fprintf(stdout, "INFO: Connecting to host: %s, port: %d\r\n", host, port);
 
     IedConnection_connect(mms_client.connection, &error, host, port);
 
