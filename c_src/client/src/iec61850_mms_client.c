@@ -60,8 +60,6 @@ static cJSON* iec61850_client_connect(cJSON* args, char **error)
         portNum = port->valueint;
     }
 
-    LOGDEBUG("portNum %s", portNum);
-
     char *_password = NULL;
  
     cJSON *password = cJSON_GetObjectItemCaseSensitive(args, "password");
@@ -70,7 +68,10 @@ static cJSON* iec61850_client_connect(cJSON* args, char **error)
         _password = password->valuestring;
     }
 
-    LOGDEBUG("_password %s", _password);
+    // --- Added Logging ---
+    fprintf(stdout, "INFO: Connecting to host: %s, portNum: %d\r\n", host->valuestring, portNum);
+    fprintf(stdout, "INFO: Password: %s\r\n", _password);
+    // ---------------------
 
     *error = start(
         host->valuestring,
