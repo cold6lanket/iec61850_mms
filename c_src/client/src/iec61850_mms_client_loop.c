@@ -36,7 +36,7 @@ char *start(char *host, int port, const char *password)
 
     fprintf(stdout, "INFO: Connecting to host: %s, port: %d\r\n", host, port);
 
-    IedConnection_connect(mms_client.connection, &error, "127.0.0.1", 102);
+    IedConnection_connect(mms_client.connection, &error, "localhost", 102);
 
     if (error != IED_ERROR_OK) {
        goto on_error;
