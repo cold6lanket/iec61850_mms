@@ -1,7 +1,9 @@
 #ifndef mms_client_loop__h
 #define mms_client_loop__h
 
-#include <eport_c.h>
+#include <stdbool.h>
+
+#include "iec61850_client.h"
 
 // --- Data Structures ---
 typedef struct {

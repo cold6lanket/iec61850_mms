@@ -108,10 +108,11 @@ cJSON *test_make_write_args(const char *path, const char *fc, const char *type, 
 /* Mock IEC 61850 client loop functions used by iec61850_mms_client.c         */
 /* -------------------------------------------------------------------------- */
 
-char *start(char *host, int port)
+char *start(char *host, int port, const char *password)
 {
     (void)host;
     (void)port;
+    (void)password;
     g_connected = true;
     g_connect_counter++;
     return NULL;

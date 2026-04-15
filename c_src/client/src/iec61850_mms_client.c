@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include <eport_c.h>
+
+#include "cJSON.h"
 
 // libiec61850 includes
 #include "iec61850_client.h"
@@ -286,10 +287,34 @@ static cJSON* on_request(char *method, cJSON *args, char **error) {
 //-----------------------------------------------------
 // Main Entry
 //-----------------------------------------------------
-int main(int argc, char *argv[]) {
-    LOGINFO("enter eport_loop");
+#ifndef IEC61850_MMS_CLIENT_DISABLE_MAIN
+int main(void) {
+    const char *host = "127.0.0.1";
+    int port = 4102;
+    char *error = NULL;
 
-    eport_loop( &on_request );
+    cJSON *args = cJSON_CreateObject();
+    if (args == NULL) {
+        fprintf(stderr, "failed to allocate connect arguments\n");
+        return EXIT_FAILURE;
+    }
 
+    cJSON_AddStringToObject(args, "host", host);
+    cJSON_AddNumberToObject(args, "port", port);
+
+    cJSON *response = on_request("connect", args, &error);
+    cJSON_Delete(args);
+
+    if (response == NULL || error != NULL) {
+        fprintf(stderr, "connect failed to %s:%d: %s\n", host, port, error ? error : "unknown error");
+        if (response != NULL) {
+            cJSON_Delete(response);
+        }
+        return EXIT_FAILURE;
+    }
+
+    printf("connect succeeded to %s:%d\n", host, port);
+    cJSON_Delete(response);
     return EXIT_SUCCESS;
 }
+#endif
