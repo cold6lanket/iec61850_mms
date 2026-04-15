@@ -165,6 +165,84 @@ static cJSON* iec61850_client_write_items(cJSON* args, char **error)
     return response;
 }
 
+static const char*
+browse_node_kind_to_string(BrowseNodeKind kind)
+{
+    switch (kind) {
+    case BROWSE_NODE_DATA_OBJECT:
+        return "data_object";
+    case BROWSE_NODE_COMPONENT:
+        return "component";
+    case BROWSE_NODE_DATA_ATTRIBUTE:
+        return "data_attribute";
+    default:
+        return "unknown";
+    }
+}
+
+static cJSON*
+browse_model_node_to_json(BrowseModelNode* node)
+{
+    cJSON* node_obj = cJSON_CreateObject();
+    cJSON* children = cJSON_CreateArray();
+
+    if ((node_obj == NULL) || (children == NULL)) {
+        if (node_obj) cJSON_Delete(node_obj);
+        if (children) cJSON_Delete(children);
+        return NULL;
+    }
+
+    cJSON_AddStringToObject(node_obj, "name", node->name);
+    cJSON_AddStringToObject(node_obj, "kind", browse_node_kind_to_string(node->kind));
+    cJSON_AddStringToObject(node_obj, "object_reference", node->object_reference);
+    cJSON_AddStringToObject(node_obj, "tree_path", node->tree_path);
+
+    if (node->fc != NULL)
+        cJSON_AddStringToObject(node_obj, "fc", node->fc);
+
+    if (node->mms_type != NULL)
+        cJSON_AddStringToObject(node_obj, "mms_type", node->mms_type);
+
+    if (node->size >= 0)
+        cJSON_AddNumberToObject(node_obj, "size", node->size);
+
+    for (int i = 0; node->children && node->children[i]; i++) {
+        cJSON* child_obj = browse_model_node_to_json(node->children[i]);
+        if (child_obj == NULL) {
+            cJSON_Delete(node_obj);
+            cJSON_Delete(children);
+            return NULL;
+        }
+
+        cJSON_AddItemToArray(children, child_obj);
+    }
+
+    cJSON_AddItemToObject(node_obj, "children", children);
+
+    return node_obj;
+}
+
+static cJSON*
+browse_model_tree_to_json(BrowseModelNode** nodes)
+{
+    cJSON* tree = cJSON_CreateArray();
+
+    if (tree == NULL)
+        return NULL;
+
+    for (int i = 0; nodes && nodes[i]; i++) {
+        cJSON* node_obj = browse_model_node_to_json(nodes[i]);
+        if (node_obj == NULL) {
+            cJSON_Delete(tree);
+            return NULL;
+        }
+
+        cJSON_AddItemToArray(tree, node_obj);
+    }
+
+    return tree;
+}
+
 static cJSON* iec61850_client_browse(cJSON* args, char **error) 
 {
     cJSON *response = NULL;
@@ -220,6 +298,14 @@ static cJSON* iec61850_client_browse(cJSON* args, char **error)
             for (int k = 0; ln->data_objects && ln->data_objects[k]; k++) 
                 cJSON_AddItemToArray(do_array, cJSON_CreateString(ln->data_objects[k]));
             cJSON_AddItemToObject(ln_obj, "data_objects", do_array);
+
+            cJSON *tree_array = browse_model_tree_to_json(ln->data_object_tree);
+            if (tree_array == NULL) {
+                *error = "unable to allocate browse tree JSON";
+                cJSON_Delete(ln_obj);
+                goto on_clear;
+            }
+            cJSON_AddItemToObject(ln_obj, "data_object_tree", tree_array);
 
             // Add Data Sets
             cJSON *ds_array = cJSON_CreateArray();
@@ -281,6 +367,7 @@ static cJSON* on_request(char *method, cJSON *args, char **error) {
 //-----------------------------------------------------
 // Main Entry
 //-----------------------------------------------------
+#ifndef IEC61850_MMS_CLIENT_DISABLE_MAIN
 int main(int argc, char *argv[]) {
     LOGINFO("enter eport_loop");
 
@@ -288,3 +375,4 @@ int main(int argc, char *argv[]) {
 
     return EXIT_SUCCESS;
 }
+#endif

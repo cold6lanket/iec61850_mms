@@ -18,6 +18,58 @@ static char *dup_cstr(const char *text)
     return out;
 }
 
+static BrowseModelNode *make_model_node(const char *name,
+                                        const char *object_reference,
+                                        const char *tree_path,
+                                        const char *fc,
+                                        const char *mms_type,
+                                        int size,
+                                        BrowseNodeKind kind)
+{
+    BrowseModelNode *node = calloc(1, sizeof(BrowseModelNode));
+    if (node == NULL) return NULL;
+
+    node->name = dup_cstr(name);
+    node->object_reference = dup_cstr(object_reference);
+    node->tree_path = dup_cstr(tree_path);
+    node->fc = (fc != NULL) ? dup_cstr(fc) : NULL;
+    node->mms_type = (mms_type != NULL) ? dup_cstr(mms_type) : NULL;
+    node->size = size;
+    node->kind = kind;
+
+    if (node->name == NULL || node->object_reference == NULL || node->tree_path == NULL ||
+        ((fc != NULL) && node->fc == NULL) ||
+        ((mms_type != NULL) && node->mms_type == NULL)) {
+        free(node->name);
+        free(node->object_reference);
+        free(node->tree_path);
+        free(node->fc);
+        free(node->mms_type);
+        free(node);
+        return NULL;
+    }
+
+    return node;
+}
+
+static void free_model_nodes(BrowseModelNode **nodes)
+{
+    if (nodes == NULL) return;
+
+    for (int i = 0; nodes[i] != NULL; i++) {
+        BrowseModelNode *node = nodes[i];
+        free(node->name);
+        free(node->object_reference);
+        free(node->tree_path);
+        free(node->fc);
+        free(node->mms_type);
+        free_model_nodes(node->children);
+        free(node);
+    }
+
+    free(nodes);
+}
+
 int test_env_int(const char *name, int fallback)
 {
     const char *raw = getenv(name);
@@ -108,10 +160,11 @@ cJSON *test_make_write_args(const char *path, const char *fc, const char *type, 
 /* Mock IEC 61850 client loop functions used by iec61850_mms_client.c         */
 /* -------------------------------------------------------------------------- */
 
-char *start(char *host, int port)
+char *start(char *host, int port, const char *password)
 {
     (void)host;
     (void)port;
+    (void)password;
     g_connected = true;
     g_connect_counter++;
     return NULL;
@@ -148,12 +201,25 @@ char *browse_server(char *host, int port, BrowseLD ***devices_out)
 
     BrowseLD **devices = calloc(2, sizeof(BrowseLD *));
     BrowseLN **nodes = calloc(2, sizeof(BrowseLN *));
-    char **data_objects = calloc(2, sizeof(char *));
+    char **data_objects = calloc(3, sizeof(char *));
+    BrowseModelNode **data_object_tree = calloc(3, sizeof(BrowseModelNode *));
+    BrowseModelNode **mod_children = calloc(4, sizeof(BrowseModelNode *));
+    BrowseModelNode **phv_children = calloc(3, sizeof(BrowseModelNode *));
+    BrowseModelNode **phsA_children = calloc(3, sizeof(BrowseModelNode *));
+    BrowseModelNode **cVal_children = calloc(3, sizeof(BrowseModelNode *));
+    BrowseModelNode **ang_children = calloc(2, sizeof(BrowseModelNode *));
 
-    if (!devices || !nodes || !data_objects) {
+    if (!devices || !nodes || !data_objects || !data_object_tree || !mod_children ||
+        !phv_children || !phsA_children || !cVal_children || !ang_children) {
         free(devices);
         free(nodes);
         free(data_objects);
+        free(data_object_tree);
+        free(mod_children);
+        free(phv_children);
+        free(phsA_children);
+        free(cVal_children);
+        free(ang_children);
         return "out of memory";
     }
 
@@ -165,13 +231,140 @@ char *browse_server(char *host, int port, BrowseLD ***devices_out)
         free(devices);
         free(nodes);
         free(data_objects);
+        free(data_object_tree);
+        free(mod_children);
+        free(phv_children);
+        free(phsA_children);
+        free(cVal_children);
+        free(ang_children);
         return "out of memory";
     }
 
     ld->ld_name = dup_cstr("MockLD1");
     ln->ln_name = dup_cstr("LLN0");
     data_objects[0] = dup_cstr("Mod");
+    data_objects[1] = dup_cstr("PhV");
     ln->data_objects = data_objects;
+
+    data_object_tree[0] = make_model_node("Mod",
+                                          "MockLD1/LLN0.Mod",
+                                          "LLN0.Mod",
+                                          NULL,
+                                          NULL,
+                                          -1,
+                                          BROWSE_NODE_DATA_OBJECT);
+    data_object_tree[1] = make_model_node("PhV",
+                                          "MockLD1/LLN0.PhV",
+                                          "LLN0.PhV",
+                                          NULL,
+                                          NULL,
+                                          -1,
+                                          BROWSE_NODE_DATA_OBJECT);
+
+    mod_children[0] = make_model_node("q",
+                                      "MockLD1/LLN0.Mod.q",
+                                      "LLN0.ST.Mod.q",
+                                      "ST",
+                                      "BIT_STRING",
+                                      13,
+                                      BROWSE_NODE_DATA_ATTRIBUTE);
+    mod_children[1] = make_model_node("t",
+                                      "MockLD1/LLN0.Mod.t",
+                                      "LLN0.ST.Mod.t",
+                                      "ST",
+                                      "UTC_TIME",
+                                      -1,
+                                      BROWSE_NODE_DATA_ATTRIBUTE);
+    mod_children[2] = make_model_node("ctlModel",
+                                      "MockLD1/LLN0.Mod.ctlModel",
+                                      "LLN0.CF.Mod.ctlModel",
+                                      "CF",
+                                      "INTEGER",
+                                      32,
+                                      BROWSE_NODE_DATA_ATTRIBUTE);
+
+    phv_children[0] = make_model_node("phsA",
+                                      "MockLD1/LLN0.PhV.phsA",
+                                      "LLN0.MX.PhV.phsA",
+                                      "MX",
+                                      "STRUCTURE",
+                                      2,
+                                      BROWSE_NODE_COMPONENT);
+    phv_children[1] = make_model_node("q",
+                                      "MockLD1/LLN0.PhV.q",
+                                      "LLN0.MX.PhV.q",
+                                      "MX",
+                                      "BIT_STRING",
+                                      13,
+                                      BROWSE_NODE_DATA_ATTRIBUTE);
+
+    phsA_children[0] = make_model_node("cVal",
+                                       "MockLD1/LLN0.PhV.phsA.cVal",
+                                       "LLN0.MX.PhV.phsA.cVal",
+                                       "MX",
+                                       "STRUCTURE",
+                                       2,
+                                       BROWSE_NODE_COMPONENT);
+    phsA_children[1] = make_model_node("q",
+                                       "MockLD1/LLN0.PhV.phsA.q",
+                                       "LLN0.MX.PhV.phsA.q",
+                                       "MX",
+                                       "BIT_STRING",
+                                       13,
+                                       BROWSE_NODE_DATA_ATTRIBUTE);
+
+    cVal_children[0] = make_model_node("mag",
+                                       "MockLD1/LLN0.PhV.phsA.cVal.mag",
+                                       "LLN0.MX.PhV.phsA.cVal.mag",
+                                       "MX",
+                                       "STRUCTURE",
+                                       1,
+                                       BROWSE_NODE_COMPONENT);
+    cVal_children[1] = make_model_node("ang",
+                                       "MockLD1/LLN0.PhV.phsA.cVal.ang",
+                                       "LLN0.MX.PhV.phsA.cVal.ang",
+                                       "MX",
+                                       "STRUCTURE",
+                                       1,
+                                       BROWSE_NODE_COMPONENT);
+
+    ang_children[0] = make_model_node("f",
+                                      "MockLD1/LLN0.PhV.phsA.cVal.ang.f",
+                                      "LLN0.MX.PhV.phsA.cVal.ang.f",
+                                      "MX",
+                                      "FLOAT",
+                                      32,
+                                      BROWSE_NODE_DATA_ATTRIBUTE);
+
+    if (data_object_tree[0] == NULL || data_object_tree[1] == NULL ||
+        mod_children[0] == NULL || mod_children[1] == NULL || mod_children[2] == NULL ||
+        phv_children[0] == NULL || phv_children[1] == NULL ||
+        phsA_children[0] == NULL || phsA_children[1] == NULL ||
+        cVal_children[0] == NULL || cVal_children[1] == NULL ||
+        ang_children[0] == NULL) {
+        free_model_nodes(data_object_tree);
+        free_model_nodes(mod_children);
+        free_model_nodes(phv_children);
+        free_model_nodes(phsA_children);
+        free_model_nodes(cVal_children);
+        free_model_nodes(ang_children);
+        free(ld->ld_name);
+        free(ln->ln_name);
+        free(ld);
+        free(ln);
+        free(devices);
+        free(nodes);
+        for (int i = 0; i < 2; i++) free(data_objects[i]);
+        free(data_objects);
+        return "out of memory";
+    }
+
+    cVal_children[1]->children = ang_children;
+    phsA_children[0]->children = cVal_children;
+    phv_children[0]->children = phsA_children;
+    data_object_tree[0]->children = mod_children;
+    data_object_tree[1]->children = phv_children;
+    ln->data_object_tree = data_object_tree;
 
     nodes[0] = ln;
     ld->logical_nodes = nodes;
@@ -199,6 +392,10 @@ void free_browse_results(BrowseLD **devices)
                         free(ln->data_objects[k]);
                     }
                     free(ln->data_objects);
+                }
+
+                if (ln->data_object_tree) {
+                    free_model_nodes(ln->data_object_tree);
                 }
 
                 if (ln->data_sets) free(ln->data_sets);
