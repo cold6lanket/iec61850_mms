@@ -64,8 +64,8 @@ CLIENT_CXXFLAGS := $(CXXFLAGS) -I $(CLIENT_INCLUDE_DIR)
 SERVER_CFLAGS := $(CFLAGS) -I $(SERVER_INCLUDE_DIR)
 SERVER_CXXFLAGS := $(CXXFLAGS) -I $(SERVER_INCLUDE_DIR)
 
-LDLIBS += -lpthread -L $(EPORT_C_LIB_DIR) -leport_c -lcjson -lcjson_utils \
-          -L $(LIBIEC61850_LIB_DIR) -liec61850
+LDLIBS += -L $(EPORT_C_LIB_DIR) -leport_c -lcjson -lcjson_utils \
+          -L $(LIBIEC61850_LIB_DIR) -liec61850 -lpthread
 
 c_verbose_0 = @echo " C     " $(?F);
 c_verbose = $(c_verbose_$(V))
