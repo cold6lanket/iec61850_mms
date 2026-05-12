@@ -36,7 +36,13 @@ cJSON* mms2json(MmsValue* value) {
 
 MmsValue *json2mms(const char* typeStr, cJSON* value) {
     if (strcmp(typeStr, "Boolean") == 0) {
-        return MmsValue_newBoolean(cJSON_IsTrue(value));
+        bool bVal = false;
+        if (cJSON_IsNumber(value)) {
+            bVal = (value->valuedouble > 0);
+        } else {
+            bVal = cJSON_IsTrue(value);
+        }
+        return MmsValue_newBoolean(bVal);
     } 
     else if (strcmp(typeStr, "Int") == 0) {
         return MmsValue_newInteger((int)value->valuedouble);
