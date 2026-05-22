@@ -66,6 +66,8 @@ MmsValue *json2mms(const char* typeStr, cJSON* value) {
 FunctionalConstraint get_fc_type(const char* fcString) {
     if (fcString == NULL) return -1; // Error safety
 
+    if (strcmp(fcString, "DC") == 0) return IEC61850_FC_DC;
+
     // Status information
     if (strcmp(fcString, "ST") == 0) return IEC61850_FC_ST;
     
