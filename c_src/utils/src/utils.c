@@ -22,9 +22,21 @@ cJSON* mms2json(MmsValue* value) {
         case MMS_STRING:
             return cJSON_CreateString(MmsValue_toString(value));
         case MMS_BIT_STRING: {
-            char buffer[64];
-            sprintf(buffer, "0x%X", MmsValue_getBitStringAsInteger(value));
-            return cJSON_CreateString(buffer);
+            int bitCount = MmsValue_getBitStringSize(value);
+            char* buffer = malloc(bitCount + 1);
+            
+            for (int i = 0; i < bitCount; i++) {
+                if (MmsValue_getBitStringBit(value, i)) {
+                    buffer[i] = '1';
+                } else {
+                    buffer[i] = '0';
+                }
+            }
+            buffer[bitCount] = '\0'; // Null-terminate
+            
+            cJSON* jsonItem = cJSON_CreateString(buffer);
+            free(buffer);
+            return jsonItem;
         }
         case MMS_DATA_ACCESS_ERROR:
             return cJSON_CreateString("Access Error");
