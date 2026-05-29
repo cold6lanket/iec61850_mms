@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "utils.h"
 
 cJSON* mms2json(MmsValue* value) {
