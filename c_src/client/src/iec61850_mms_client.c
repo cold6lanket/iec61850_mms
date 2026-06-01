@@ -103,7 +103,7 @@ static cJSON* iec61850_client_read_items(cJSON* args, char **error)
 
         if (MmsValue_getType(value) == MMS_VISIBLE_STRING) {
             // error
-            printf("MMS value MMS_VISIBLE_STRING");
+            // printf("MMS value MMS_VISIBLE_STRING");
             cJSON_AddItemToObject(result, path, cJSON_CreateString( MmsValue_toString(value) ));
         } else {
             cJSON_AddItemToObject(result, path, mms2json(value));
